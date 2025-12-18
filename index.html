@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Kombat: CUSTOM STATS</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;700&family=Creepster&display=swap');
+
+        :root {
+            --p1-color: #ff2a6d;
+            --p2-color: #05d9e8;
+            --bg-dark: #01012b;
+            --glass: rgba(1, 1, 43, 0.95);
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+            font-family: 'Rajdhani', sans-serif;
+            color: white;
+            user-select: none;
+        }
+
+        /* --- UI LAYER --- */
+        #ui-layer {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
+        }
+
+        /* HUD */
+        #hud-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 30px 50px;
+            text-transform: uppercase;
+        }
+
+        .fighter-info {
+            width: 40%;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .name-tag {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 32px;
+            font-weight: 900;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px rgba(255,255,255,0.5);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .p1-name { color: var(--p1-color); }
+        .p2-name { color: var(--p2-color); flex-direction: row-reverse; }
+
+        .health-track {
+            width: 100%;
+            height: 24px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            transform: skewX(-20deg);
+            position: relative;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        .health-fill {
+            height: 100%;
+            width: 100%;
+            background: var(--p1-color);
+            box-shadow: 0 0 15px var(--p1-color);
+            transition: width 0.1s ease-out;
+            position: absolute;
+            top: 0; left: 0;
+        }
+
+        .p2-track .health-fill {
+            background: var(--p2-color);
+            box-shadow: 0 0 15px var(--p2-color);
+            right: 0; left: auto;
+        }
+
+        /* STAMINA BAR STYLES */
+        .stamina-track {
+            width: 80%;
+            height: 8px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transform: skewX(-20deg);
+            margin-top: 4px;
+            position: relative;
+        }
+
+        .stamina-fill {
+            height: 100%;
+            width: 100%;
+            background: #00ff00; /* Green Energy */
+            box-shadow: 0 0 8px #00ff00;
+            transition: width 0.1s linear;
+        }
+        
+        .p2-track-stamina {
+            align-self: flex-end; /* Align to right for P2 */
+        }
+
+        #timer {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 80px;
+            color: #fff;
+            text-shadow: 0 0 20px #fff;
+            position: absolute;
+            left: 50%; top: 10px;
+            transform: translateX(-50%);
+        }
+
+        /* --- SELECT SCREEN --- */
+        #select-screen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at center, transparent 0%, #000 120%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            pointer-events: auto;
+            transition: opacity 0.5s;
+        }
+
+        .hero-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 50px;
+            letter-spacing: 10px;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.8);
+            margin-bottom: 20px;
+            text-shadow: 0 0 20px #fff;
+        }
+
+        /* Stats Panels */
+        .stats-panel {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 280px;
+            padding: 20px;
+            background: linear-gradient(90deg, var(--glass), transparent);
+            border-left: 4px solid #fff;
+            transition: all 0.2s;
+            z-index: 20;
+        }
+
+        .p1-stats { left: 20px; border-color: var(--p1-color); text-align: left; }
+        .p2-stats { right: 20px; border-color: var(--p2-color); text-align: right; background: linear-gradient(-90deg, var(--glass), transparent); border-left: none; border-right: 4px solid var(--p2-color); }
+
+        .stat-hero-name {
+            font-family: 'Orbitron';
+            font-size: 32px;
+            margin: 0;
+            line-height: 1;
+            white-space: nowrap;
+        }
+        
+        .stat-role { color: #888; font-size: 14px; margin-bottom: 20px; letter-spacing: 2px; }
+        
+        .stat-row { 
+            margin: 10px 0; 
+            font-size: 14px; 
+            color: #aaa; 
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .stat-label { width: 60px; font-weight: bold; }
+        
+        .stat-bar { 
+            height: 8px; 
+            background: #333; 
+            flex-grow: 1;
+            margin: 0 10px;
+            position: relative; 
+        }
+        .stat-val { height: 100%; background: #fff; box-shadow: 0 0 10px #fff; transition: width 0.2s; }
+        
+        .stat-num { width: 30px; text-align: right; font-family: monospace; }
+
+        /* Customization UI */
+        .edit-active {
+            border: 1px solid yellow;
+            background: rgba(255, 255, 0, 0.1);
+        }
+        .stat-edit-arrow { color: yellow; font-weight: bold; margin: 0 5px; }
+        .points-remaining { color: #00ff00; font-weight: bold; text-align: center; margin-bottom: 10px; font-family: 'Orbitron'; }
+
+        /* Roster Grid */
+        .roster-container {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 8px;
+            padding: 20px;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid #333;
+            border-radius: 10px;
+            backdrop-filter: blur(5px);
+        }
+
+        .roster-slot {
+            width: 60px;
+            height: 70px; 
+            background: rgba(10, 10, 30, 0.9);
+            border: 1px solid #444;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.1s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .roster-slot .icon {
+            filter: grayscale(100%);
+            transition: filter 0.2s;
+            z-index: 1;
+        }
+
+        .roster-slot.active-p1 {
+            border: 2px solid var(--p1-color);
+            background: rgba(255, 42, 109, 0.3);
+            box-shadow: 0 0 15px var(--p1-color);
+            transform: scale(1.1);
+            z-index: 5;
+        }
+
+        .roster-slot.active-p2 {
+            border: 2px solid var(--p2-color);
+            background: rgba(5, 217, 232, 0.3);
+            box-shadow: 0 0 15px var(--p2-color);
+            transform: scale(1.1);
+            z-index: 5;
+        }
+
+        .roster-slot.active-p1.active-p2 {
+            background: linear-gradient(135deg, rgba(255,42,109,0.4), rgba(5,217,232,0.4));
+            border-color: #fff;
+        }
+
+        .roster-slot.active-p1 .icon, .roster-slot.active-p2 .icon { filter: grayscale(0%); }
+
+        .locked-badge {
+            position: absolute; bottom: 0; width: 100%; text-align: center;
+            font-size: 8px; background: #fff; color: #000; font-weight: bold;
+            display: none;
+        }
+        .roster-slot.locked .locked-badge { display: block; }
+
+        /* --- OVERLAYS --- */
+        #announce-overlay {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            pointer-events: none;
+            width: 100%;
+            z-index: 50;
+        }
+
+        .announce-text {
+            font-family: 'Orbitron';
+            font-size: 120px;
+            color: #fff;
+            text-shadow: 0 0 50px red;
+            margin: 0;
+            opacity: 0;
+            transform: scale(2);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        .fatality-text {
+            font-family: 'Creepster', cursive !important;
+            color: #ff0000 !important;
+            text-shadow: 0 0 50px #550000, 2px 2px 0px #000 !important;
+            font-size: 150px !important;
+        }
+
+        .announce-text.show {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        #game-over-btn, #start-overlay-btn {
+            pointer-events: auto;
+            background: rgba(0,0,0,0.8);
+            border: 2px solid #fff;
+            color: white;
+            padding: 20px 50px;
+            font-family: 'Orbitron';
+            font-size: 24px;
+            cursor: pointer;
+            margin-top: 20px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: all 0.2s;
+        }
+        
+        #game-over-btn:hover, #start-overlay-btn:hover {
+            background: #fff;
+            color: #000;
+            box-shadow: 0 0 20px #fff;
+        }
+
+        #game-over-btn { opacity: 0; transition: opacity 1s; }
+
+        #start-overlay {
+            position: absolute; top:0; left:0; width:100%; height:100%;
+            background: rgba(0,0,0,0.8);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 100;
+        }
+
+        #footer {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            text-align: center;
+            font-size: 14px;
+            color: #888;
+            pointer-events: none;
+            text-transform: uppercase;
+        }
+        .key { border: 1px solid #666; padding: 2px 6px; border-radius: 4px; color: #fff; background: #222; font-weight: bold; }
+        .hidden { display: none !important; }
+        
+        #hit-flash {
+            position: absolute; top:0; left:0; width:100%; height:100%;
+            background: white; opacity: 0; pointer-events: none;
+            mix-blend-mode: overlay;
+        }
+        
+        #block-flash {
+            position: absolute; top:0; left:0; width:100%; height:100%;
+            background: cyan; opacity: 0; pointer-events: none;
+            mix-blend-mode: screen;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 3D Container -->
+    <div id="canvas-container"></div>
+    <div id="hit-flash"></div>
+    <div id="block-flash"></div>
+
+    <!-- Click to Start Overlay to fix focus issues -->
+    <div id="start-overlay">
+        <button id="start-overlay-btn" onclick="startExperience()">ENTER THE ARENA</button>
+    </div>
+
+    <!-- UI -->
+    <div id="ui-layer">
+        
+        <!-- Selection Screen -->
+        <div id="select-screen" class="hidden">
+            <div class="hero-title">Select Fighter</div>
+            
+            <div class="stats-panel p1-stats" id="p1-panel">
+                <h1 class="stat-hero-name" id="p1-hero-name">SCORPION</h1>
+                <div class="stat-role">ASSAULT CLASS</div>
+                <!-- Dynamic Content Here -->
+            </div>
+
+            <div class="stats-panel p2-stats" id="p2-panel">
+                <h1 class="stat-hero-name" id="p2-hero-name">SUB-ZERO</h1>
+                <div class="stat-role">DEFENSE CLASS</div>
+                <!-- Dynamic Content Here -->
+            </div>
+
+            <div class="roster-container" id="roster-grid"></div>
+            
+            <div id="footer" style="bottom: 50px;">
+                <span style="color:var(--p1-color)">P1:</span> <span class="key">WASD</span> Navigate <span class="key">F</span> Select <span style="color:#ffff00; display:none" id="p1-custom-hint"> | EDIT: <span class="key">1</span> Cycle <span class="key">Q</span>/<span class="key">E</span> Adj</span>
+                &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
+                <span style="color:var(--p2-color)">P2:</span> <span class="key">ARROWS</span> Navigate <span class="key">K</span> Select <span style="color:#ffff00; display:none" id="p2-custom-hint"> | EDIT: <span class="key">7</span> Cycle <span class="key">U</span>/<span class="key">I</span> Adj</span>
+            </div>
+        </div>
+
+        <!-- In Game HUD -->
+        <div id="hud-top" class="hidden">
+            <div class="fighter-info">
+                <div class="name-tag p1-name"><span id="hud-p1-name">SCORPION</span></div>
+                <div class="health-track"><div class="health-fill" id="p1-hp"></div></div>
+                <div class="stamina-track"><div class="stamina-fill" id="p1-stamina"></div></div>
+            </div>
+
+            <div id="timer">99</div>
+
+            <div class="fighter-info" style="align-items: flex-end;">
+                <div class="name-tag p2-name"><span id="hud-p2-name">SUB-ZERO</span></div>
+                <div class="health-track p2-track"><div class="health-fill" id="p2-hp"></div></div>
+                <div class="stamina-track p2-track-stamina"><div class="stamina-fill" id="p2-stamina"></div></div>
+            </div>
+        </div>
+
+        <!-- Announcer / Game Over -->
+        <div id="announce-overlay">
+            <h1 class="announce-text" id="announce-text">FIGHT!</h1>
+            <button id="game-over-btn" onclick="resetGame()">PLAY AGAIN</button>
+        </div>
+
+        <div id="footer" class="game-controls hidden">
+            <span style="color:var(--p1-color)">P1:</span> <span class="key">A</span><span class="key">D</span> Move <span class="key">W</span> Attack <span class="key">S</span> Block
+            &nbsp;&nbsp;|&nbsp;&nbsp; 
+            <span style="color:var(--p2-color)">P2:</span> <span class="key">←</span><span class="key">→</span> Move <span class="key">↑</span> Attack <span class="key">↓</span> Block
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <script>
+        // --- AUDIO SYSTEM ---
+        const AudioSys = {
+            ctx: new (window.AudioContext || window.webkitAudioContext)(),
+            playTone: function(freq, type, duration, vol=0.1) {
+                if(this.ctx.state === 'suspended') this.ctx.resume();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(freq/2, this.ctx.currentTime + duration);
+                gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + duration);
+            },
+            playHit: function() { this.playTone(100, 'sawtooth', 0.1, 0.4); },
+            playBlock: function() { this.playTone(150, 'square', 0.05, 0.3); },
+            playSelect: function() { this.playTone(800, 'sine', 0.05, 0.05); },
+            playLock: function() { this.playTone(400, 'triangle', 0.3, 0.2); },
+            playJump: function() { this.playTone(200, 'sine', 0.2, 0.1); },
+            playFatality: function() { this.playTone(50, 'sawtooth', 2.0, 0.5); }
+        };
+
+        // --- HERO ROSTER ---
+        const HEROES = [
+            // Row 1
+            { name: "SCORPION", role: "SPECTER", color: 0xffd700, icon: "🦂", stats: {pow: 85, spd: 80, stm: 85} },
+            { name: "SUB-ZERO", role: "CRYOMANCER", color: 0x00ffff, icon: "❄️", stats: {pow: 75, spd: 75, stm: 90} },
+            { name: "REPTILE", role: "SAURIAN", color: 0x39ff14, icon: "🦎", stats: {pow: 70, spd: 90, stm: 80} },
+            { name: "ERMAC", role: "LEGION", color: 0xdc143c, icon: "🔮", stats: {pow: 90, spd: 60, stm: 75} },
+            { name: "RAIDEN", role: "GOD", color: 0xffffff, icon: "⚡", stats: {pow: 95, spd: 70, stm: 100} },
+            { name: "NOOB", role: "WRAITH", color: 0x222222, icon: "🌑", stats: {pow: 80, spd: 85, stm: 85} },
+            { name: "SEKTOR", role: "CYBORG", color: 0xff0000, icon: "🤖", stats: {pow: 85, spd: 65, stm: 95} },
+            { name: "CYRAX", role: "CYBORG", color: 0xffaa00, icon: "💣", stats: {pow: 80, spd: 75, stm: 90} },
+            // Row 2
+            { name: "SMOKE", role: "ENENRA", color: 0x888888, icon: "💨", stats: {pow: 70, spd: 95, stm: 70} },
+            { name: "KITANA", role: "PRINCESS", color: 0x4169e1, icon: "🌀", stats: {pow: 75, spd: 85, stm: 80} },
+            { name: "MILEENA", role: "CLONE", color: 0xff69b4, icon: "🦷", stats: {pow: 85, spd: 80, stm: 75} },
+            { name: "JADE", role: "ASSASSIN", color: 0x00ff7f, icon: "🟩", stats: {pow: 70, spd: 90, stm: 85} },
+            { name: "KANO", role: "MERCENARY", color: 0xffffff, secColor: 0xff0000, icon: "👁️", stats: {pow: 80, spd: 70, stm: 90} },
+            { name: "SONYA", role: "SOLDIER", color: 0x9acd32, icon: "🔫", stats: {pow: 75, spd: 80, stm: 85} },
+            { name: "JAX", role: "MAJOR", color: 0xdaa520, icon: "🦾", stats: {pow: 90, spd: 60, stm: 95} },
+            { name: "SHAO KHAN", role: "EMPEROR", color: 0x8b4513, icon: "🔨", stats: {pow: 100, spd: 50, stm: 100} },
+            // Row 3
+            { name: "LIU KANG", role: "CHAMPION", color: 0xff3333, icon: "🐉", stats: {pow: 85, spd: 85, stm: 90} },
+            { name: "KUNG LAO", role: "MONK", color: 0x0099ff, icon: "🎩", stats: {pow: 80, spd: 90, stm: 85} },
+            { name: "BARAKA", role: "TARKATAN", color: 0xffaa88, icon: "⚔️", stats: {pow: 90, spd: 70, stm: 95} },
+            { name: "SHANG TSUNG", role: "SORCERER", color: 0xaa00aa, icon: "🐍", stats: {pow: 85, spd: 75, stm: 80} },
+            { name: "QUAN CHI", role: "NECROMANCER", color: 0xccffcc, icon: "💀", stats: {pow: 85, spd: 70, stm: 75} },
+            { name: "GORO", role: "PRINCE", color: 0xcc9966, icon: "💪", stats: {pow: 98, spd: 40, stm: 100} },
+            { name: "SINDEL", role: "QUEEN", color: 0xffccff, icon: "👑", stats: {pow: 88, spd: 65, stm: 80} },
+            { name: "NIGHTWOLF", role: "SHAMAN", color: 0x00ccaa, icon: "🐺", stats: {pow: 80, spd: 80, stm: 90} },
+            // Row 4
+            { name: "FUJIN", role: "WIND GOD", color: 0xaaddff, icon: "🌪️", stats: {pow: 80, spd: 88, stm: 85} },
+            { name: "RAIN", role: "PRINCE", color: 0x8800ff, icon: "🌧️", stats: {pow: 82, spd: 82, stm: 80} },
+            { name: "TANYA", role: "TRAITOR", color: 0xffff00, icon: "🔥", stats: {pow: 78, spd: 88, stm: 75} },
+            { name: "REIKO", role: "GENERAL", color: 0x660033, icon: "⭐", stats: {pow: 85, spd: 75, stm: 90} },
+            { name: "FROST", role: "CYBORG", color: 0xaaffff, icon: "❄️", stats: {pow: 75, spd: 85, stm: 80} },
+            { name: "KENSHI", role: "SWORDSMAN", color: 0xaa0000, icon: "🙈", stats: {pow: 88, spd: 75, stm: 85} },
+            { name: "HAVIK", role: "CHAOS", color: 0x996633, icon: "👺", stats: {pow: 85, spd: 80, stm: 95} },
+            { name: "COSTUMUSE", role: "CUSTOM", color: 0xffffff, icon: "❔", stats: {pow: 80, spd: 80, stm: 80}, custom: true } // Customizable
+        ];
+
+        const STATE = { MENU: 0, INTRO: 1, GAME: 2, FINISH_HIM: 3, FATALITY_ANIM: 4, OVER: 5 };
+        let appState = STATE.MENU;
+        let p1Index = 0, p2Index = 1;
+        let p1Locked = false, p2Locked = false;
+        let hitStopFrames = 0;
+        let timeScale = 1.0;
+        let p1, p2; 
+        let menuFighter1, menuFighter2;
+
+        // Custom Stats State
+        let p1CustomStats = { pow: 80, spd: 80, stm: 80, pool: 20 }; // Starts balanced with extra
+        let p2CustomStats = { pow: 80, spd: 80, stm: 80, pool: 20 };
+        let p1EditIdx = 0; // 0=Pow, 1=Spd, 2=Stm
+        let p2EditIdx = 0;
+
+        // --- THREE JS SETUP ---
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x01012b, 0.02);
+        
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 100);
+        camera.position.set(0, 3, 14);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.outputEncoding = THREE.sRGBEncoding;
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+        // --- ENVIRONMENT ---
+        const ambient = new THREE.HemisphereLight(0xffffff, 0x000022, 0.4); 
+        scene.add(ambient);
+
+        const spot = new THREE.SpotLight(0xffffff, 1.2);
+        spot.position.set(0, 20, 10);
+        spot.castShadow = true;
+        spot.shadow.mapSize.width = 2048; 
+        spot.shadow.mapSize.height = 2048;
+        scene.add(spot);
+        
+        const rimLight = new THREE.DirectionalLight(0x4444ff, 0.8);
+        rimLight.position.set(0, 5, -10);
+        scene.add(rimLight);
+
+        // Floor Grid
+        const gridHelper = new THREE.GridHelper(100, 50, 0xff00ff, 0x111133);
+        gridHelper.position.y = 0.01;
+        scene.add(gridHelper);
+
+        const floor = new THREE.Mesh(
+            new THREE.PlaneGeometry(200, 200),
+            new THREE.MeshStandardMaterial({ color: 0x020215, roughness: 0.2, metalness: 0.6 })
+        );
+        floor.rotation.x = -Math.PI/2;
+        floor.receiveShadow = true;
+        scene.add(floor);
+
+        // Animated Background Props
+        const bgProps = [];
+        for(let i=0; i<12; i++) {
+            const h = 15 + Math.random() * 10;
+            const geo = new THREE.BoxGeometry(2, h, 2);
+            const mat = new THREE.MeshStandardMaterial({ color: 0x111122, emissive: 0x050510, roughness: 0.2 });
+            const mesh = new THREE.Mesh(geo, mat);
+            const angle = (i/12) * Math.PI * 2;
+            const radius = 25 + Math.random() * 5;
+            mesh.position.set(Math.cos(angle)*radius, h/2 - 5, Math.sin(angle)*radius - 10);
+            scene.add(mesh);
+            bgProps.push({ mesh, offset: Math.random() * Math.PI, speed: 0.001 + Math.random() * 0.002 });
+        }
+
+        // --- FIGHTER CLASS ---
+        class Fighter {
+            constructor(isP1, data, customStats) {
+                this.isP1 = isP1;
+                this.data = data;
+                this.hp = 100;
+                this.maxHp = 100;
+                
+                // USE CUSTOM STATS IF PROVIDED
+                const stats = customStats || data.stats;
+                this.stats = stats; // Store for logic
+
+                // EFFECTIVE STATS (Gameplay Impact) - AMPLIFIED
+                // Stamina affects max pool and regen. Range: 100 to 300 pool.
+                this.maxStamina = stats.stm * 2.5; 
+                this.stamina = this.maxStamina;
+                // Regen varies wildly: Low stat = slow regen, High stat = near instant
+                this.regenRate = stats.stm * 1.2;
+
+                // Speed affects movement physics. Range: Slow walk vs Sprint
+                this.moveSpeed = 15 + (stats.spd * 0.5); 
+                
+                // Power affects damage (handled in collision)
+                
+                this.pos = new THREE.Vector3(isP1?-4:4, 0, 0);
+                this.vel = new THREE.Vector3();
+                this.mesh = new THREE.Group();
+                this.facing = isP1 ? 1 : -1;
+                
+                this.action = 'IDLE'; 
+                this.timer = 0;
+                
+                this.createDetailedModel(data.color, data.secColor);
+                this.mesh.position.copy(this.pos);
+                scene.add(this.mesh);
+            }
+
+            createDetailedModel(color, secColor) {
+                // ... [Same Model Code] ...
+                const armorMat = new THREE.MeshStandardMaterial({ color: color, emissive: color, emissiveIntensity: 0.3, roughness: 0.2, metalness: 0.8 });
+                const undersuitMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8, metalness: 0.1 });
+                const skinMat = new THREE.MeshStandardMaterial({ color: 0xaa8866, roughness: 0.6 });
+                const jointMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.5, metalness: 0.5 });
+                const createSegment = (w, h, d, mat) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.castShadow = true; return m; };
+
+                this.hips = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.4, 0.5), undersuitMat);
+                this.hips.position.y = 1.9; this.mesh.add(this.hips);
+                const belt = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.15, 0.55), armorMat); this.hips.add(belt);
+
+                const createLeg = (x) => {
+                    const g = new THREE.Group(); g.position.set(x, 0, 0);
+                    const hip = new THREE.Mesh(new THREE.SphereGeometry(0.22, 16, 16), jointMat); g.add(hip);
+                    const thigh = createSegment(0.35, 0.7, 0.35, undersuitMat); thigh.position.y = -0.35;
+                    const arm = createSegment(0.38, 0.4, 0.38, armorMat); arm.position.y = 0; thigh.add(arm); hip.add(thigh);
+                    const knee = new THREE.Mesh(new THREE.SphereGeometry(0.2, 16, 16), jointMat); knee.position.y = -0.35; thigh.add(knee);
+                    const shin = createSegment(0.3, 0.7, 0.3, undersuitMat); shin.position.y = -0.35;
+                    const sg = createSegment(0.32, 0.5, 0.32, armorMat); sg.position.y = 0; shin.add(sg); knee.add(shin);
+                    const foot = createSegment(0.32, 0.2, 0.5, armorMat); foot.position.set(0, -0.45, 0.1); shin.add(foot);
+                    return { group: g, thigh: hip, shin: knee };
+                };
+                this.legLObj = createLeg(-0.25); this.legRObj = createLeg(0.25);
+                this.hips.add(this.legLObj.group); this.hips.add(this.legRObj.group);
+
+                this.torso = createSegment(0.8, 0.9, 0.5, undersuitMat); this.torso.position.y = 0.65;
+                const cp = createSegment(0.85, 0.5, 0.55, armorMat); cp.position.y = 0.2; this.torso.add(cp); this.hips.add(this.torso);
+
+                this.head = new THREE.Group(); this.head.position.y = 0.6; this.torso.add(this.head);
+                const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.2), skinMat); neck.position.y = 0.1; this.head.add(neck);
+                const skull = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.55, 0.5), skinMat); skull.position.y = 0.4; this.head.add(skull);
+                const mask = new THREE.Mesh(new THREE.BoxGeometry(0.47, 0.3, 0.52), armorMat); mask.position.set(0, -0.12, 0); skull.add(mask);
+                const eyes = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.05, 0.05), new THREE.MeshBasicMaterial({color: 0xffffff})); eyes.position.set(0, 0.05, 0.26); skull.add(eyes);
+                const hood = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.2, 0.52), armorMat); hood.position.set(0, 0.28, 0); skull.add(hood);
+
+                const createArm = (x) => {
+                    const g = new THREE.Group(); g.position.set(x, 0.35, 0);
+                    const sh = new THREE.Mesh(new THREE.SphereGeometry(0.25, 16, 16), armorMat); g.add(sh);
+                    const up = createSegment(0.25, 0.5, 0.25, undersuitMat); up.position.y = -0.25; sh.add(up);
+                    const el = new THREE.Mesh(new THREE.SphereGeometry(0.18, 16, 16), jointMat); el.position.y = -0.25; up.add(el);
+                    const fa = createSegment(0.22, 0.5, 0.22, undersuitMat); fa.position.y = -0.25;
+                    const ga = createSegment(0.26, 0.35, 0.26, armorMat); ga.position.y = 0; fa.add(ga); el.add(fa);
+                    const ha = createSegment(0.2, 0.2, 0.2, skinMat); ha.position.y = -0.35; fa.add(ha);
+                    return { group: g, upper: sh, lower: el };
+                };
+                this.armLObj = createArm(-0.55); this.armRObj = createArm(0.55);
+                this.torso.add(this.armLObj.group); this.torso.add(this.armRObj.group);
+
+                this.parts = { hips: this.hips, torso: this.torso, head: this.head, legL: this.legLObj.thigh, kneeL: this.legLObj.shin, legR: this.legRObj.thigh, kneeR: this.legRObj.shin, armL: this.armLObj.upper, elbowL: this.armLObj.lower, armR: this.armRObj.upper, elbowR: this.armRObj.lower };
+            }
+
+            update(enemy, dt) {
+                const regenPaused = ['PUNCH', 'BLOCK'].includes(this.action);
+                if (!regenPaused && this.stamina < this.maxStamina) {
+                    this.stamina += this.regenRate * dt; 
+                    if(this.stamina > this.maxStamina) this.stamina = this.maxStamina;
+                }
+
+                const GRAVITY = 30;
+                this.vel.y -= GRAVITY * dt; 
+                this.pos.add(this.vel.clone().multiplyScalar(dt * this.moveSpeed)); // USE STAT BASED SPEED
+
+                if(this.pos.y < 0) { this.pos.y = 0; this.vel.y = 0; }
+                this.pos.x = Math.max(-13, Math.min(13, this.pos.x));
+
+                if(appState === STATE.GAME) {
+                    const dist = this.pos.distanceTo(enemy.pos);
+                    if(dist < 1.0 && Math.abs(this.pos.y - enemy.pos.y) < 2) {
+                        const pushForce = (1.0 - dist) * 0.1;
+                        const dir = this.pos.x < enemy.pos.x ? -1 : 1;
+                        this.pos.x += dir * pushForce;
+                    }
+                    this.facing = this.pos.x < enemy.pos.x ? 1 : -1;
+                }
+
+                this.mesh.position.copy(this.pos);
+                this.mesh.rotation.y = this.facing === 1 ? Math.PI/2 : -Math.PI/2;
+                
+                if(this.timer > 0) {
+                    // Animation speed heavily affected by SPD stat
+                    // 50 SPD = 0.75x speed (Sluggish)
+                    // 100 SPD = 1.5x speed (Lightning fast)
+                    const animSpdMult = 0.25 + (this.stats.spd / 80); 
+                    this.timer -= dt * 60 * animSpdMult; 
+                    if(this.timer <= 0) {
+                        this.timer = 0;
+                        if(['PUNCH', 'STUN'].includes(this.action)) this.action = 'IDLE';
+                    }
+                }
+
+                this.animate(dt);
+            }
+
+            animate(dt) {
+                const t = Date.now() * 0.008;
+                const p = this.parts;
+                
+                p.torso.rotation.set(0,0,0); p.head.rotation.set(0,0,0);
+                p.torso.rotation.x = Math.sin(t) * 0.05; p.head.rotation.x = Math.cos(t) * 0.05; p.hips.position.y = 1.9 + Math.sin(t*2)*0.02;
+
+                const act = this.action;
+                if(act === 'IDLE') {
+                    p.armL.rotation.set(0.5, 0, -0.5); p.elbowL.rotation.x = -1.5;
+                    p.armR.rotation.set(-0.5, 0, -0.5); p.elbowR.rotation.x = -1.5;
+                    p.legL.rotation.set(-0.2, 0, 0); p.kneeL.rotation.x = 0.4;
+                    p.legR.rotation.set(0.2, 0, 0); p.kneeR.rotation.x = 0.1;
+                }
+                else if(act === 'WALK') {
+                    const wSpeed = 20; 
+                    p.legL.rotation.x = Math.sin(t*wSpeed) * 0.8; p.kneeL.rotation.x = Math.abs(Math.sin(t*wSpeed))*1;
+                    p.legR.rotation.x = Math.cos(t*wSpeed) * 0.8; p.kneeR.rotation.x = Math.abs(Math.cos(t*wSpeed))*1;
+                    p.armL.rotation.x = Math.cos(t*wSpeed) * 0.8; p.armR.rotation.x = Math.sin(t*wSpeed) * 0.8;
+                }
+                else if(act === 'BLOCK') {
+                    p.hips.position.y = 1.3;
+                    p.legL.rotation.x = -1.2; p.kneeL.rotation.x = 2.0; p.legR.rotation.x = -1.0; p.kneeR.rotation.x = 2.0;
+                    p.armL.rotation.set(-0.5, 0, 0.5); p.elbowL.rotation.x = -2.5;
+                    p.armR.rotation.set(-0.5, 0, -0.5); p.elbowR.rotation.x = -2.5; p.torso.rotation.x = 0.3; 
+                }
+                else if(act === 'PUNCH') {
+                    const progress = 1 - (this.timer / 15);
+                    if(progress < 0.2) { p.torso.rotation.y = -0.5; p.armR.rotation.x = -0.5; } 
+                    else if (progress < 0.5) { p.torso.rotation.y = 0.8; p.armR.rotation.set(-1.5, 0, 0.2); p.elbowR.rotation.x = -0.2; } 
+                    else { p.armR.rotation.set(-0.5, 0, 0); p.elbowR.rotation.x = -1.5; }
+                }
+                else if(act === 'STUN') { p.torso.rotation.x = -0.5; p.head.rotation.x = -0.5; p.armL.rotation.x = -2.5; p.armR.rotation.x = -2.5; }
+                else if(act === 'DIZZY') { p.torso.rotation.z = Math.sin(t*5) * 0.2; p.head.rotation.z = Math.sin(t*5) * -0.3; p.armL.rotation.z = -2; p.armR.rotation.z = 2; }
+                else if(act === 'DEAD') { p.hips.position.y = 0.5; p.torso.rotation.x = -1.5; p.legL.rotation.x = -0.5; p.legR.rotation.x = -0.5; }
+            }
+        }
+
+        // --- CORE LOGIC ---
+        function startExperience() {
+            document.getElementById('start-overlay').style.opacity = 0;
+            document.getElementById('start-overlay').style.pointerEvents = 'none';
+            document.getElementById('select-screen').classList.remove('hidden');
+            if(AudioSys.ctx.state === 'suspended') AudioSys.ctx.resume();
+            initMenu();
+            animate();
+        }
+
+        function initMenu() {
+            const grid = document.getElementById('roster-grid');
+            grid.innerHTML = '';
+            HEROES.forEach((h, i) => {
+                const div = document.createElement('div');
+                div.className = 'roster-slot';
+                div.innerHTML = `<span class="icon">${h.icon}</span><div class="locked-badge">LOCKED</div>`;
+                div.id = `slot-${i}`;
+                grid.appendChild(div);
+            });
+            updateMenuUI();
+        }
+
+        function generateStatHTML(playerPrefix, hero, customStats, editIdx) {
+            let stats = hero.custom ? customStats : hero.stats;
+            const isCustom = hero.custom;
+            
+            // Helper to generate a single stat row
+            const makeRow = (label, val, idx) => {
+                const isActive = isCustom && idx === editIdx;
+                const activeClass = isActive ? 'edit-active' : '';
+                const arrow = isActive ? '<span class="stat-edit-arrow">►</span>' : '';
+                return `
+                <div class="stat-row ${activeClass}">
+                    <span class="stat-label">${arrow}${label}</span>
+                    <div class="stat-bar"><div class="stat-val" style="width: ${val}%"></div></div>
+                    <span class="stat-num">${val}</span>
+                </div>`;
+            };
+
+            let html = `<h1 class="stat-hero-name" style="color:#${hero.color.toString(16)}">${hero.name}</h1>`;
+            html += `<div class="stat-role">${hero.role}</div>`;
+            
+            if(isCustom) {
+                html += `<div class="points-remaining">POINTS: ${customStats.pool}</div>`;
+            }
+
+            html += makeRow("POW", stats.pow, 0);
+            html += makeRow("SPD", stats.spd, 1);
+            html += makeRow("STM", stats.stm, 2);
+
+            html += `<div class="stat-row" style="margin-top: 20px; color: var(--${playerPrefix}-color); font-weight: bold;">
+                ${playerPrefix === 'p1' ? (p1Locked?"READY!":"P1: PRESS F") : (p2Locked?"READY!":"P2: PRESS K")}
+            </div>`;
+            
+            return html;
+        }
+
+        function updateMenuUI() {
+            // Update 3D Visuals
+            if(!menuFighter1 || menuFighter1.data.name !== HEROES[p1Index].name) {
+                if(menuFighter1) scene.remove(menuFighter1.mesh);
+                menuFighter1 = new Fighter(true, HEROES[p1Index]);
+                menuFighter1.pos.set(-3, 0, 5);
+                menuFighter1.mesh.rotation.y = 0.5;
+                AudioSys.playSelect();
+            }
+            if(!menuFighter2 || menuFighter2.data.name !== HEROES[p2Index].name) {
+                if(menuFighter2) scene.remove(menuFighter2.mesh);
+                menuFighter2 = new Fighter(false, HEROES[p2Index]);
+                menuFighter2.pos.set(3, 0, 5);
+                menuFighter2.mesh.rotation.y = -0.5;
+                AudioSys.playSelect();
+            }
+
+            // Grid Styling
+            document.querySelectorAll('.roster-slot').forEach(el => el.className = 'roster-slot');
+            document.getElementById(`slot-${p1Index}`).classList.add('active-p1');
+            if(p1Locked) document.getElementById(`slot-${p1Index}`).classList.add('locked');
+            document.getElementById(`slot-${p2Index}`).classList.add('active-p2');
+            if(p2Locked) document.getElementById(`slot-${p2Index}`).classList.add('locked');
+
+            // Render Stats Panels with Logic
+            const h1 = HEROES[p1Index];
+            document.getElementById('p1-panel').innerHTML = generateStatHTML('p1', h1, p1CustomStats, p1EditIdx);
+            if(h1.custom) document.getElementById('p1-custom-hint').style.display = 'inline';
+            else document.getElementById('p1-custom-hint').style.display = 'none';
+
+            const h2 = HEROES[p2Index];
+            document.getElementById('p2-panel').innerHTML = generateStatHTML('p2', h2, p2CustomStats, p2EditIdx);
+            if(h2.custom) document.getElementById('p2-custom-hint').style.display = 'inline';
+            else document.getElementById('p2-custom-hint').style.display = 'none';
+
+            if(p1Locked && p2Locked) {
+                setTimeout(startIntro, 800);
+            }
+        }
+
+        // --- INPUT HANDLING ---
+        const keys = {};
+        
+        function handleCustomization(player, action) {
+            // player: 1 or 2. action: 'cycle', 'inc', 'dec'
+            const isP1 = player === 1;
+            const hero = HEROES[isP1 ? p1Index : p2Index];
+            if(!hero.custom || (isP1 ? p1Locked : p2Locked)) return;
+
+            let stats = isP1 ? p1CustomStats : p2CustomStats;
+            let idx = isP1 ? p1EditIdx : p2EditIdx;
+            
+            const keysArr = ['pow', 'spd', 'stm'];
+            const key = keysArr[idx];
+
+            if(action === 'cycle') {
+                if(isP1) p1EditIdx = (p1EditIdx + 1) % 3;
+                else p2EditIdx = (p2EditIdx + 1) % 3;
+            } else if (action === 'inc') {
+                if(stats.pool > 0 && stats[key] < 100) {
+                    stats[key] += 5;
+                    stats.pool -= 5;
+                }
+            } else if (action === 'dec') {
+                if(stats[key] > 50) { // Min 50
+                    stats[key] -= 5;
+                    stats.pool += 5;
+                }
+            }
+            updateMenuUI();
+        }
+
+        window.onkeydown = (e) => {
+            const k = e.key.toLowerCase();
+            keys[k] = true;
+
+            if(appState === STATE.MENU) {
+                // P1 NAVIGATION
+                if(!p1Locked) {
+                    if(k === 'a') p1Index = (p1Index - 1 + HEROES.length) % HEROES.length;
+                    if(k === 'd') p1Index = (p1Index + 1) % HEROES.length;
+                    if(k === 'w') p1Index = (p1Index - 8 + HEROES.length) % HEROES.length; 
+                    if(k === 's') p1Index = (p1Index + 8) % HEROES.length; 
+                    if(k === 'f') { p1Locked = true; AudioSys.playLock(); }
+                    
+                    // P1 CUSTOMIZATION
+                    if(k === '1') handleCustomization(1, 'cycle');
+                    if(k === 'q') handleCustomization(1, 'dec');
+                    if(k === 'e') handleCustomization(1, 'inc');
+                    
+                    updateMenuUI();
+                }
+                
+                // P2 NAVIGATION
+                if(!p2Locked) {
+                    if(k === 'arrowleft') p2Index = (p2Index - 1 + HEROES.length) % HEROES.length;
+                    if(k === 'arrowright') p2Index = (p2Index + 1) % HEROES.length;
+                    if(k === 'arrowup') p2Index = (p2Index - 8 + HEROES.length) % HEROES.length;
+                    if(k === 'arrowdown') p2Index = (p2Index + 8) % HEROES.length;
+                    if(k === 'k') { p2Locked = true; AudioSys.playLock(); }
+
+                    // P2 CUSTOMIZATION
+                    if(k === '7') handleCustomization(2, 'cycle');
+                    if(k === 'u') handleCustomization(2, 'dec');
+                    if(k === 'i') handleCustomization(2, 'inc');
+
+                    updateMenuUI();
+                }
+            }
+        };
+        window.onkeyup = (e) => keys[e.key.toLowerCase()] = false;
+
+        function startIntro() {
+            if(appState !== STATE.MENU) return;
+            appState = STATE.INTRO;
+            scene.remove(menuFighter1.mesh); scene.remove(menuFighter2.mesh);
+            menuFighter1 = null; menuFighter2 = null;
+
+            // Pass Custom Stats if selected
+            const h1 = HEROES[p1Index];
+            const h2 = HEROES[p2Index];
+            p1 = new Fighter(true, h1, h1.custom ? p1CustomStats : null);
+            p2 = new Fighter(false, h2, h2.custom ? p2CustomStats : null);
+
+            document.getElementById('select-screen').classList.add('hidden');
+            document.getElementById('hud-top').classList.remove('hidden');
+            document.querySelector('.game-controls').classList.remove('hidden');
+
+            document.getElementById('hud-p1-name').innerText = p1.data.name;
+            document.getElementById('hud-p2-name').innerText = p2.data.name;
+            updateHUD();
+
+            let frame = 0;
+            const targetPos = new THREE.Vector3(0, 4, 16);
+            function introLoop() {
+                frame++;
+                camera.position.lerp(targetPos, 0.03);
+                if(frame < 100) requestAnimationFrame(introLoop);
+                else {
+                    announce("READY");
+                    setTimeout(() => {
+                        announce("FIGHT!");
+                        appState = STATE.GAME;
+                        startGameTimer();
+                    }, 1500);
+                }
+            }
+            introLoop();
+        }
+
+        function announce(text, duration=1000) {
+            const el = document.getElementById('announce-text');
+            el.innerHTML = text;
+            if(text.includes('FATALITY')) el.classList.add('fatality-text');
+            else el.classList.remove('fatality-text');
+            el.classList.add('show');
+            if(duration > 0) setTimeout(() => el.classList.remove('show'), duration);
+        }
+
+        let gameTimer = 99;
+        let gameInterval;
+        function startGameTimer() {
+            gameTimer = 99;
+            clearInterval(gameInterval);
+            gameInterval = setInterval(() => {
+                if(appState !== STATE.GAME || hitStopFrames > 0) return;
+                gameTimer--;
+                document.getElementById('timer').innerText = gameTimer;
+                if(gameTimer <= 0) endGame("TIME UP");
+            }, 1000);
+        }
+
+        function updateHUD() {
+            document.getElementById('p1-hp').style.width = p1.hp + '%';
+            document.getElementById('p2-hp').style.width = p2.hp + '%';
+            document.getElementById('p1-stamina').style.width = (p1.stamina / p1.maxStamina * 100) + '%';
+            document.getElementById('p2-stamina').style.width = (p2.stamina / p2.maxStamina * 100) + '%';
+        }
+
+        function handleInput(f, attack, block, left, right, enemy) {
+            if(f.hp <= 0 && appState !== STATE.FINISH_HIM) return;
+            if(f.action === 'STUN' || f.action === 'DIZZY' || f.action === 'DEAD') return;
+            
+            f.vel.x = 0;
+            if(['PUNCH'].includes(f.action)) return;
+
+            const canAction = (cost) => f.stamina >= cost;
+
+            if(keys[block]) { 
+                f.action = 'BLOCK'; 
+                return; 
+            }
+
+            f.action = 'IDLE';
+            if(keys[left]) { f.vel.x = -0.5; f.action = 'WALK'; } 
+            if(keys[right]) { f.vel.x = 0.5; f.action = 'WALK'; }
+
+            if(keys[attack] && f.timer === 0) { 
+                if(canAction(25)) {
+                    f.stamina -= 25;
+                    f.action = 'PUNCH'; 
+                    f.timer = 15; 
+                    checkMeleeHit(f, enemy); 
+                }
+            }
+        }
+
+        function checkMeleeHit(att, def) {
+            const xDist = Math.abs(att.pos.x - def.pos.x);
+            const yDist = Math.abs(att.pos.y - def.pos.y);
+
+            if(xDist < 2.5 && yDist < 1.5) {
+                if(def.action === 'DIZZY') { performFatality(att, def); return; }
+                
+                // POW SCALING FACTOR (0.5 to 2.0 multiplier based on stat 50-100)
+                const powerMult = att.stats.pow / 60; 
+
+                if(def.action === 'BLOCK') {
+                    const staminaDmg = 15 * powerMult; // Stronger hits drain more stamina
+                    def.stamina -= staminaDmg;
+                    if (def.stamina < 0) {
+                        def.stamina = 0;
+                        def.action = 'STUN';
+                        def.timer = 40; 
+                        announce("GUARD BREAK!", 500);
+                        AudioSys.playHit(); 
+                    } else {
+                        // CHIP DAMAGE modified by POW
+                        const chip = 2 * powerMult;
+                        def.hp -= Math.max(1, chip); 
+                        AudioSys.playBlock();
+                        spawnSpark(def.pos.clone().add(new THREE.Vector3(0,1.5,0)), 0x00ffff, 8); 
+                        def.pos.x += att.facing * (0.5 * powerMult); // Pushback scaled by power
+                        const flash = document.getElementById('block-flash');
+                        flash.style.opacity = 0.2; setTimeout(() => flash.style.opacity = 0, 50);
+                    }
+                } else {
+                    // MAIN DAMAGE modified by POW
+                    // Min Pow (50) ~= 6 dmg
+                    // Max Pow (100) ~= 14 dmg
+                    const dmg = 8 * powerMult; 
+                    
+                    def.hp -= dmg;
+                    def.action = 'STUN';
+                    
+                    // Stun time slightly affected by power (heavier hits stun longer)
+                    def.timer = 20 + (5 * powerMult);
+                    
+                    // Knockback heavily affected by power
+                    def.vel.x = att.facing * (0.4 * powerMult); 
+                    def.vel.y = 0.2 * powerMult; 
+                    
+                    AudioSys.playHit();
+                    hitStopFrames = 4 + Math.floor(powerMult * 2); // Heavier hits freeze screen longer
+                    spawnSpark(def.pos.clone().add(new THREE.Vector3(0,1.5,0)), 0xff0000, 20 * powerMult); 
+                    screenShake(0.5 * powerMult); 
+                    const flash = document.getElementById('hit-flash');
+                    flash.style.opacity = 0.4; setTimeout(() => flash.style.opacity = 0, 50);
+                }
+                updateHUD();
+                if(def.hp <= 0 && appState === STATE.GAME) triggerFinishHim(def);
+            }
+        }
+
+        function triggerFinishHim(loser) {
+            appState = STATE.FINISH_HIM;
+            loser.hp = 0; loser.action = 'DIZZY'; loser.vel.set(0,0,0);
+            announce("FINISH HIM!", 0);
+            setTimeout(() => { if(appState === STATE.FINISH_HIM) endGame("TIME UP"); }, 3000);
+        }
+
+        function performFatality(att, def) {
+            appState = STATE.FATALITY_ANIM;
+            announce("FATALITY", 4000);
+            AudioSys.playFatality();
+            timeScale = 0.2; 
+            def.action = 'DEAD';
+            def.vel.set(att.facing * 2, 1, 0); 
+            spawnSpark(def.pos.clone().add(new THREE.Vector3(0,1.5,0)), 0xff0000, 150);
+            screenShake(2.0);
+            
+            const mid = (att.pos.x + def.pos.x) / 2;
+            const targetPos = new THREE.Vector3(mid, 3, 8);
+            let f = 0;
+            function zoom() {
+                if(appState !== STATE.FATALITY_ANIM) return;
+                f++; camera.position.lerp(targetPos, 0.1);
+                requestAnimationFrame(zoom);
+            }
+            zoom();
+            setTimeout(() => { timeScale = 1.0; endGame(att.data.name + " WINS"); }, 3000);
+        }
+
+        function endGame(txt) {
+            appState = STATE.OVER;
+            clearInterval(gameInterval);
+            announce(txt);
+            document.getElementById('game-over-btn').style.opacity = 1;
+        }
+
+        window.resetGame = function() { window.location.reload(); };
+
+        // --- PARTICLES ---
+        const particles = [];
+        const floorDecals = []; 
+        function spawnSpark(pos, color, count) {
+            for(let i=0; i<count; i++) {
+                const geo = new THREE.BoxGeometry(0.12,0.12,0.12);
+                const mat = new THREE.MeshBasicMaterial({color: color});
+                const mesh = new THREE.Mesh(geo, mat);
+                mesh.position.copy(pos);
+                scene.add(mesh);
+                particles.push({
+                    mesh, 
+                    vel: new THREE.Vector3((Math.random()-0.5)*1.2, Math.random()*1.2, (Math.random()-0.5)*1.2),
+                    life: 30 + Math.random() * 20,
+                    isBlood: color === 0xff0000
+                });
+            }
+        }
+        let shakeVal = 0;
+        function screenShake(amt) { shakeVal = amt; }
+
+        // --- ANIMATION LOOP ---
+        const clock = new THREE.Clock();
+        function animate() {
+            requestAnimationFrame(animate);
+            if(hitStopFrames > 0) { hitStopFrames--; return; }
+            let dt = Math.min(clock.getDelta(), 0.1) * timeScale;
+
+            bgProps.forEach(prop => {
+                prop.mesh.position.y += Math.sin(Date.now() * prop.speed + prop.offset) * 0.05;
+                prop.mesh.rotation.y += 0.005;
+            });
+
+            if(appState === STATE.MENU) {
+                if(menuFighter1) menuFighter1.update({pos: menuFighter1.pos}, dt);
+                if(menuFighter2) menuFighter2.update({pos: menuFighter2.pos}, dt);
+            } else {
+                if(appState === STATE.GAME || appState === STATE.FINISH_HIM) {
+                    handleInput(p1, 'w', 's', 'a', 'd', p2);
+                    handleInput(p2, 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', p1);
+                    updateHUD(); 
+                }
+                if(p1) p1.update(p2, dt);
+                if(p2) p2.update(p1, dt);
+                if(appState !== STATE.FATALITY_ANIM && p1 && p2) {
+                    const midX = (p1.pos.x + p2.pos.x) / 2;
+                    const dist = Math.abs(p1.pos.x - p2.pos.x);
+                    camera.position.x += (midX - camera.position.x) * 0.1;
+                    const targZ = 12 + dist * 0.6; 
+                    camera.position.z += (targZ - camera.position.z) * 0.05;
+                    camera.lookAt(midX, 3, 0);
+                    if(shakeVal > 0) {
+                        camera.position.x += (Math.random()-0.5)*shakeVal;
+                        camera.position.y = 3 + (Math.random()-0.5)*shakeVal;
+                        shakeVal *= 0.85;
+                        if(shakeVal < 0.01) shakeVal = 0;
+                    }
+                }
+            }
+            
+            for(let i=particles.length-1; i>=0; i--) {
+                const p = particles[i];
+                p.life -= timeScale;
+                p.mesh.position.add(p.vel.clone().multiplyScalar(timeScale));
+                p.vel.y -= 0.05 * timeScale; 
+                if(p.mesh.position.y <= 0.05) {
+                    p.mesh.position.y = 0.05; p.vel.y = 0; p.vel.x *= 0.8; p.vel.z *= 0.8;
+                    if(p.isBlood && p.life < 20) {
+                        p.life = 0;
+                        const dGeo = new THREE.PlaneGeometry(0.3, 0.3);
+                        const dMat = new THREE.MeshBasicMaterial({color: 0xaa0000, transparent:true, opacity:0.8});
+                        const decal = new THREE.Mesh(dGeo, dMat);
+                        decal.rotation.x = -Math.PI/2; decal.position.copy(p.mesh.position); decal.position.y = 0.02; decal.rotation.z = Math.random() * Math.PI;
+                        scene.add(decal); floorDecals.push(decal);
+                    }
+                }
+                if(p.life <= 0) { scene.remove(p.mesh); particles.splice(i,1); }
+            }
+            if(floorDecals.length > 50) { scene.remove(floorDecals[0]); floorDecals.shift(); }
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
